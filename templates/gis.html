@@ -1,0 +1,147 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+	<head>
+        <meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+		<title>gis</title>
+        <script type="text/javascript" src="http://api.map.baidu.com/api?v=1.2"></script>
+        <style type="text/css">
+        body{font-size:14px;}
+        h5{line-height:3em;padding:0;margin:0;}
+
+        .txt{border:1px solid #ccc;background:none;padding:1px; width:500px;}
+        .f-l{float:left;}
+        .t-c{text-align:center;}
+        .clear{clear:both;}
+        .hidden{display:none;}
+        .searchbox{border:4px solid #e5ecf9;height:40px;float:left;line-height:40px;padding:0 20px;margin:0 0 0 50px;}
+        .mainbox{margin:20px 0 0;}
+        .boxmap{width:900px;height:550px;border:1px solid gray;float:left;}
+        .boxpanel{width:250px;float:left;margin:0 0 0 10px;border:1px solid gray;padding:0 10px 10px;}
+        #startPanel,#endPanel{border:1px solid #FA8722;font-size:12px;}
+        #startPanel div,#endPanel div{padding:5px;}
+        #startPanel p,#endPanel p{margin:0;padding:0;line-height:1.2em;}
+        #drivingPanel{border:1px solid #6688EE;}
+        </style>
+
+	</head>
+	<body>
+	<h2 align="center">gis</h2>
+	<iframe width="450" scrolling="no" height="65" frameborder="0" align="right" align="top" allowtransparency="true" src="http://i.tianqi.com/index.php?c=code&id=2&icon=3&num=3"></iframe>
+	<div>
+        <div class="searchbox">
+            local：<input class="txt" type="text" value="uestc" id="searchPlace" />&nbsp;&nbsp;
+            round：<select
+                id="aroundType">
+                <option>market</option>
+                <option>school</option>
+                <option>hospital</option>
+                <option>bank</option>
+            </select>
+            <input type="button" value="serch" id="btnSearch" onClick="doSearchPlace()" />
+        </div>
+        
+    </div>
+    <div class="clear"></div>
+    <div class="mainbox">
+        <div class="boxmap" id="container"></div>
+        <div id="results" style="font-size:13px;margin-top:10px;"></div>
+<div id="hospitalresults" style="font-size:13px;margin-top:10px;"></div>
+
+    </div>
+
+	</body>
+</html>
+<script type="text/javascript">
+    var map = new BMap.Map("container");           
+    var point = new BMap.Point(103.938891,30.754819);    
+    map.centerAndZoom(point, 15);                    
+    map.enableScrollWheelZoom();                  
+    map.enableKeyboard();                         
+    map.addControl(new BMap.NavigationControl());              
+    map.addControl(new BMap.ScaleControl());                  
+    map.addControl(new BMap.OverviewMapControl());             
+
+    var searchresult;
+    var local = new BMap.LocalSearch(map, {
+        renderOptions: {
+            map: map,
+            panel: "results"
+        },
+        onSearchComplete: function (results) {
+           
+            if (local.getStatus() == BMAP_STATUS_SUCCESS) searchresult = results;
+            else searchresult = null;
+        }
+    });
+    var searchresult2;
+    var local2 = new BMap.LocalSearch(map, {
+        renderOptions:
+    {
+        map: map,
+        panel: "hospitalresults"
+    },
+    onSearchComplete: function (results) {
+      
+        if (local.getStatus() == BMAP_STATUS_SUCCESS) searchresult2 = results;
+        else searchresult2 = null;
+    }
+    });
+    function doSearchPlace() {
+        if (local.getResults() != null) 
+            local.clearResults();
+        if (local2.getResults() != null)
+            local2.clearResults();
+        map.clearOverlays();
+        var destination = document.getElementById("searchPlace").value;
+        local.search(destination);
+        local.setResultsHtmlSetCallback(function () {
+            if (searchresult == null) return false;
+            var controls = document.getElementsByTagName("li");
+            for (var i = 0; i < controls.length; i++) {
+                var spans = controls[i].getElementsByTagName("span");
+                var arr = new Array(2);
+                var p = searchresult.getPoi(i);
+                if (p == null) continue;
+                arr[0] = searchresult.getPoi(i).point.lng;
+                arr[1] = searchresult.getPoi(i).point.lat;
+                spans[1].onclick = function () {
+                    map.clearOverlays();
+
+                    point.lng = arr[0];
+                    point.lat = arr[1];
+
+                    var circle = new BMap.Circle(point, 2000, { strokeWeight: 5, fillOpacity: 0.5 });
+                    map.addOverlay(circle);
+
+                    var around = document.getElementById("aroundType");
+                    var bounds = getSquareBounds(circle.getCenter(), circle.getRadius());
+                    local2.searchInBounds(around[around.selectedIndex].text, bounds);
+                };
+            }
+        });
+    }
+   
+    function getSquareBounds(centerPoi, r) {
+        var a = Math.sqrt(2) * r; 
+
+        mPoi = getMecator(centerPoi);
+        var x0 = mPoi.x, y0 = mPoi.y;
+
+        var x1 = x0 + a / 2, y1 = y0 + a / 2; 
+        var x2 = x0 - a / 2, y2 = y0 - a / 2; 
+
+        var ne = getPoi(new BMap.Pixel(x1, y1)), sw = getPoi(new BMap.Pixel(x2, y2));
+        return new BMap.Bounds(sw, ne);
+
+    }
+   
+    function getMecator(poi) {
+        return map.getMapType().getProjection().lngLatToPoint(poi);
+    }
+    
+    function getPoi(mecator) {
+        return map.getMapType().getProjection().pointToLngLat(mecator);
+    }
+
+</script>
