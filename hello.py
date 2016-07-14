@@ -2,10 +2,13 @@ from flask import Flask,render_template
 from flask_bootstrap import Bootstrap
 from datetime import datetime
 from flask_moment import Moment
-
+from flask_mail import Mail
 from flask_wtf import Form
 from wtforms import StringField,SubmitField
 from wtforms.validators import Required
+from werkzeug.security import generate_password_hash,check_password_hash
+
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hard to guess string'
